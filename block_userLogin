@@ -1,0 +1,71 @@
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.servlet.http.*;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+
+
+@WebServlet("/servlet4")
+public class LoginController extends HttpServlet {
+	
+	public LoginController() {
+        super();
+    }
+	//int login_attempts=3;
+    protected  void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String un = request.getParameter("username");
+        String pw = request.getParameter("password");
+        String la = request.getParameter("login_attempts");
+        int lattempts = Integer.parseInt(request.getParameter("la"));
+        //int lattempts = Integer.getInteger(request.getParameter(la)).intValue();
+        PrintWriter pwriter = response.getWriter();  
+// Connect to mySql database...
+        
+
+        try {
+        	
+            Class.forName("com.mysql.jdbc.Driver");
+// loads driver
+            Connection c = DriverManager.getConnection("jdbc:mysql://localhost:3306/amit", "root", ""); // gets a new connection
+
+            PreparedStatement ps = c.prepareStatement("select username,password,login_attempts from grizzly_admin where username=?,password=?,login_attempts=?");
+            ps.setString(1, un);
+            ps.setString(2, pw);
+            ps.setString(3,la);
+            ResultSet rs = ps.executeQuery();
+//check multiple entry of wrong pssword...if lattempts > 3, then block user...
+            if(rs.next()) {
+            	HttpSession session=request.getSession(); 
+            	session.setAttribute("username",un); 
+            	String sessionName = (String) session.getAttribute("username"); 
+            	if(un.equals("username")){ 
+            		if(pw.equals("password")) { 
+            			pwriter.println(("Success")); 
+            			pwriter.println(sessionName); 
+            			} else 
+            			{ lattempts = lattempts - 1; 
+            			if(lattempts < 3 && sessionName.equals(un)){
+            				pwriter.println(" You have this try " + lattempts + " : " + sessionName); 
+            				} else if(lattempts == 0 && sessionName.equals(un)){
+            					pwriter.println("Please contact admin for, as your account is blocked"); }
+            		}
+            	}
+               // response.sendRedirect("success.html");
+                //return;
+            }
+         // response.sendRedirect("error.html");
+           //return;
+           
+        } catch (ClassNotFoundException | SQLException  | NumberFormatException e) {
+            e.printStackTrace();
+        }
+    }
+}
