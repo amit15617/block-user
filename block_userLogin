@@ -1,7 +1,7 @@
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
+import java.sql.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.servlet.http.*;
@@ -10,60 +10,100 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+//import com.mysql.jdbc.Statement;
+
 import java.io.PrintWriter;
 
 
-@WebServlet("/servlet4")
-public class LoginController extends HttpServlet {
+@WebServlet("/AdminLogin")
+public class AdminLogin1 extends HttpServlet {
 	
-	public LoginController() {
-        super();
-    }
+	//public AdminLogin1() {
+      //  super();
+   // }
+	
 	//int login_attempts=3;
     protected  void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String un = request.getParameter("username");
         String pw = request.getParameter("password");
-        String la = request.getParameter("login_attempts");
-        int lattempts = Integer.parseInt(request.getParameter("la"));
-        //int lattempts = Integer.getInteger(request.getParameter(la)).intValue();
+        
+        
         PrintWriter pwriter = response.getWriter();  
 // Connect to mySql database...
-        
-
+       
         try {
         	
             Class.forName("com.mysql.jdbc.Driver");
 // loads driver
-            Connection c = DriverManager.getConnection("jdbc:mysql://localhost:3306/amit", "root", ""); // gets a new connection
-
-            PreparedStatement ps = c.prepareStatement("select username,password,login_attempts from grizzly_admin where username=?,password=?,login_attempts=?");
+            System.out.println("Loaded driver...");
+            Connection c = DriverManager.getConnection("jdbc:mysql://localhost:3306/amit", "root", "password-1"); // gets a new connection
+            System.out.println("Connected to the database...");
+           
+            
+            
+            
+           PreparedStatement ps = c.prepareStatement("select username,password from amit.grizzly_admin where username=? and password=?");
             ps.setString(1, un);
             ps.setString(2, pw);
-            ps.setString(3,la);
             ResultSet rs = ps.executeQuery();
+            System.out.println("query :"+ ps.toString());
+           /* Statement stmt1=c.createStatement();
+            
+			String query="insert into amit.grizzly_admin (id,name,username,password,designation,office,failed_attempts,status)" + "values('aa','aaa','aaa','aaa','aaa','aaa',3,'fg')";
+			stmt1.executeUpdate(query);*/
+            
+           /* PreparedStatement stmt=c.prepareStatement("select * from grizzly_admin");  
+            ResultSet rs2=stmt.executeQuery();  
+            while(rs2.next()){  
+            System.out.println(rs2.getString(1)+" "+rs2.getString(2));  
+            } */
+            
+            
+           // ps.setString(3,la);
+
 //check multiple entry of wrong pssword...if lattempts > 3, then block user...
+            System.out.println("before if");
             if(rs.next()) {
+            	System.out.println("after if");
             	HttpSession session=request.getSession(); 
             	session.setAttribute("username",un); 
             	String sessionName = (String) session.getAttribute("username"); 
             	if(un.equals("username")){ 
             		if(pw.equals("password")) { 
             			pwriter.println(("Success")); 
+            			System.out.println("success...");
             			pwriter.println(sessionName); 
-            			} else 
-            			{ lattempts = lattempts - 1; 
+            			} 
+            	}
+            
+            
+            		else 
+            			{ 
+            			//HttpSession session=request.getSession(); 
+            			
+            			PreparedStatement stmt1=c.prepareStatement("select failed_attempts from amit.grizzly_admin");  
+            			ResultSet rs1=stmt1.executeQuery(); 
+            			System.out.println("failed");
+            			//while(rs1.next()) {
+            			//	System.out.println(rs1.getInt("failed_attempts")); 
+            			//}
+            			rs1.absolute(2);
+            			int lattempts = rs1.getInt("failed_attempts");
+            			lattempts = lattempts - 1; 
             			if(lattempts < 3 && sessionName.equals(un)){
             				pwriter.println(" You have this try " + lattempts + " : " + sessionName); 
             				} else if(lattempts == 0 && sessionName.equals(un)){
             					pwriter.println("Please contact admin for, as your account is blocked"); }
             		}
-            	}
-               // response.sendRedirect("success.html");
-                //return;
+            	
+              // response.sendRedirect("success.html");
+              //  return;
+            
+    
+          //response.sendRedirect("error.html");
+          // return;
             }
-         // response.sendRedirect("error.html");
-           //return;
-           
         } catch (ClassNotFoundException | SQLException  | NumberFormatException e) {
             e.printStackTrace();
         }
